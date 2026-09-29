@@ -38,6 +38,17 @@ Scanning a whole game directory still works as before.
   With only one archive loaded, those references can't be resolved. Select every archive you need together, or
   scan the game directory.
 
+## Download
+
+GitHub builds the app automatically on every change (see the **Build** workflow under the **Actions** tab).
+
+- **Latest build:** open **Actions → Build**, click the newest green run, and download **PAK-Extractor-win-x64**
+  from the *Artifacts* section at the bottom of the page. Unzip it and run `Index.App.exe`.
+- **Releases:** pushing a tag that starts with `v` (e.g. `v0.4.0.2-pak1`) publishes the build as a zip on the
+  **Releases** page.
+
+The app needs the [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0) (x64) installed.
+
 ## Building
 
 Requirements: Windows, the .NET 8 SDK, and Visual Studio 2022 (or `dotnet build`).
