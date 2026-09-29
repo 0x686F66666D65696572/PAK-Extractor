@@ -14,6 +14,7 @@ namespace Index.Profiles.SpaceMarine2
 
     public override IFileSystemLoader FileSystemLoader => new SM2FileSystemLoader();
     public override IGamePathIdentificationRule IdentificationRule => new SM2GamePathIdentificationRule();
+    public override IReadOnlyList<string> SupportedFileExtensions { get; } = new[] { ".pak" };
 
     #endregion
   }

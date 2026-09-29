@@ -16,6 +16,7 @@ namespace Index.Profiles.Halo2A
 
     public override IFileSystemLoader FileSystemLoader => new H2AFileSystemLoader();
     public override IGamePathIdentificationRule IdentificationRule => new H2AGamePathIdentificationRule();
+    public override IReadOnlyList<string> SupportedFileExtensions { get; } = new[] { ".pck" };
 
     #endregion
 

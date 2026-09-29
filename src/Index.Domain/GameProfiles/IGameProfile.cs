@@ -18,6 +18,11 @@ namespace Index.Domain.GameProfiles
     public IFileSystemLoader FileSystemLoader { get; }
     public IGamePathIdentificationRule IdentificationRule { get; }
 
+    /// <summary>
+    ///   Archive extensions (e.g. ".pak") this profile can open directly, without a game path.
+    /// </summary>
+    public IReadOnlyList<string> SupportedFileExtensions { get; }
+
     #endregion
 
     #region Public Methods

@@ -17,6 +17,7 @@ namespace Index.Profiles.HaloCEA
 
     public override IFileSystemLoader FileSystemLoader => new CEAFileSystemLoader();
     public override IGamePathIdentificationRule IdentificationRule => new CEAGamePathIdentificationRule();
+    public override IReadOnlyList<string> SupportedFileExtensions { get; } = new[] { ".s3dpak", ".ipak" };
 
     #endregion
 

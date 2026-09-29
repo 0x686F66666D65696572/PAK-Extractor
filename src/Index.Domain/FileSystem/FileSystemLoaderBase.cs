@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks.Dataflow;
+﻿using System.IO.Enumeration;
+using System.Threading.Tasks.Dataflow;
 
 namespace Index.Domain.FileSystem
 {
@@ -21,6 +22,7 @@ namespace Index.Domain.FileSystem
     #region Data Members
 
     private string _basePath;
+    private List<string>? _sourceFiles;
     private readonly HashSet<string> _deviceFileNames;
     private readonly List<IFileSystemDevice> _loadedDevices;
 
@@ -32,6 +34,12 @@ namespace Index.Domain.FileSystem
 
     protected string BasePath => _basePath;
     protected IReadOnlyList<IFileSystemDevice> Devices => _loadedDevices;
+
+    /// <summary>
+    ///   True when the loader was given explicit files via <see cref="SetSourceFiles"/>
+    ///   rather than a game directory to scan.
+    /// </summary>
+    protected bool IsUsingSourceFiles => _sourceFiles is not null;
 
     #endregion
 
@@ -55,6 +63,22 @@ namespace Index.Domain.FileSystem
       ASSERT( Directory.Exists( basePath ), "Directory does not exist: {0}", basePath );
 
       _basePath = basePath;
+    }
+
+    public void SetSourceFiles( IEnumerable<string> filePaths )
+    {
+      ASSERT_NOT_NULL( filePaths );
+
+      var files = filePaths.Select( Path.GetFullPath ).Distinct( StringComparer.OrdinalIgnoreCase ).ToList();
+      ASSERT( files.Count > 0, "No source files were specified." );
+
+      foreach ( var file in files )
+        ASSERT( File.Exists( file ), "File does not exist: {0}", file );
+
+      _sourceFiles = files;
+
+      // Devices use the base path to build display names, so point it at the common parent directory.
+      _basePath = GetCommonDirectory( files );
     }
 
     public async Task<IReadOnlyList<IFileSystemDevice>> LoadDevices()
@@ -94,7 +118,7 @@ namespace Index.Domain.FileSystem
 
     protected Task LoadFileWithName( string name, Func<string, IFileSystemDevice> deviceFactory )
     {
-      foreach ( var filePath in Directory.EnumerateFiles( _basePath, name, SearchOption.AllDirectories ) )
+      foreach ( var filePath in EnumerateCandidateFiles( name ) )
       {
         var fileName = Path.GetFileNameWithoutExtension( filePath ).ToLower();
         LoadDevice( filePath, deviceFactory );
@@ -109,11 +133,14 @@ namespace Index.Domain.FileSystem
       if ( excludedFileNames is null )
         excludedFileNames = Enumerable.Empty<string>();
 
-      var excludeSet = new HashSet<string>( excludedFileNames.Select( x => x.ToLower() ) );
+      // Files the user picked explicitly are always loaded, even if the profile would normally skip them.
+      var excludeSet = IsUsingSourceFiles
+        ? new HashSet<string>()
+        : new HashSet<string>( excludedFileNames.Select( x => x.ToLower() ) );
 
       extension = SanitizeExtension( extension );
 
-      foreach ( var filePath in Directory.EnumerateFiles( _basePath, extension, SearchOption.AllDirectories ) )
+      foreach ( var filePath in EnumerateCandidateFiles( extension ) )
       {
         var fileName = Path.GetFileNameWithoutExtension( filePath ).ToLower();
         if ( excludeSet.Contains( fileName ) )
@@ -127,6 +154,37 @@ namespace Index.Domain.FileSystem
       }
 
       return Task.CompletedTask;
+    }
+
+    private IEnumerable<string> EnumerateCandidateFiles( string searchPattern )
+    {
+      if ( _sourceFiles is null )
+        return Directory.EnumerateFiles( _basePath, searchPattern, SearchOption.AllDirectories );
+
+      return _sourceFiles.Where( x => FileSystemName.MatchesSimpleExpression( searchPattern, Path.GetFileName( x ) ) );
+    }
+
+    private static string GetCommonDirectory( IReadOnlyList<string> files )
+    {
+      var firstDirectory = Path.GetDirectoryName( files[ 0 ] )!;
+
+      string? common = firstDirectory;
+      foreach ( var file in files.Skip( 1 ) )
+      {
+        var directory = Path.GetDirectoryName( file )!;
+        while ( common is not null && !IsSameOrChildDirectory( directory, common ) )
+          common = Path.GetDirectoryName( common );
+      }
+
+      // Files on different drives share no directory; fall back to the first file's directory.
+      return common ?? firstDirectory;
+    }
+
+    private static bool IsSameOrChildDirectory( string directory, string parent )
+    {
+      var relative = Path.GetRelativePath( parent, directory );
+      var escapesParent = relative == ".." || relative.StartsWith( ".." + Path.DirectorySeparatorChar );
+      return !escapesParent && !Path.IsPathRooted( relative );
     }
 
     private void AddDeviceToLoadQueue( IFileSystemDevice device )

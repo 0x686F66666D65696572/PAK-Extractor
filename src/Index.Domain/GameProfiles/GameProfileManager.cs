@@ -47,6 +47,44 @@ namespace Index.Domain.GameProfiles
       return pathIdentifier.IdentifyCompatableProfiles( path ).ToList();
     }
 
+    public IList<IGameProfile> FindProfilesForFile( string filePath )
+    {
+      var extension = Path.GetExtension( filePath );
+      if ( string.IsNullOrEmpty( extension ) )
+        return new List<IGameProfile>();
+
+      return _profiles.Values
+        .Where( x => x.SupportedFileExtensions.Contains( extension, StringComparer.OrdinalIgnoreCase ) )
+        .OrderBy( x => x.GameName )
+        .ToList();
+    }
+
+    /// <summary>
+    ///   Finds a single profile that can open every one of the given files.
+    ///   Returns null if no files were given, or if they don't all belong to the same game.
+    /// </summary>
+    public IGameProfile? ResolveProfileForFiles( IEnumerable<string> filePaths )
+    {
+      IEnumerable<IGameProfile>? candidates = null;
+      foreach ( var filePath in filePaths )
+      {
+        var profiles = FindProfilesForFile( filePath );
+        candidates = candidates is null ? profiles : candidates.Intersect( profiles ).ToList();
+      }
+
+      return candidates?.FirstOrDefault();
+    }
+
+    public IReadOnlyList<string> GetSupportedFileExtensions()
+    {
+      return _profiles.Values
+        .SelectMany( x => x.SupportedFileExtensions )
+        .Select( x => x.ToLowerInvariant() )
+        .Distinct()
+        .OrderBy( x => x )
+        .ToList();
+    }
+
     #endregion
 
     #region Private Methods

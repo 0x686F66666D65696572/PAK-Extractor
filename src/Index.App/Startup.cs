@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Threading;
 using DryIoc;
@@ -121,7 +122,7 @@ namespace Index.App
 
       InitializeDatabase();
 
-      if ( !TryApplyDebugLaunchArgs() )
+      if ( !TryApplyFileLaunchArgs() && !TryApplyDebugLaunchArgs() )
         if ( !ShowLauncher() )
           Environment.Exit( 0 );
 
@@ -164,6 +165,38 @@ namespace Index.App
       bootstrapper.Run();
     }
 
+    /// <summary>
+    ///   Opens archive files passed on the command line (e.g. "Index.App.exe resources.pak"),
+    ///   which also covers dragging files onto the executable and "Open with".
+    /// </summary>
+    private bool TryApplyFileLaunchArgs()
+    {
+      var filePaths = Environment.GetCommandLineArgs()
+        .Skip( 1 )
+        .Where( File.Exists )
+        .ToList();
+
+      if ( filePaths.Count == 0 )
+        return false;
+
+      var profileManager = Container.Resolve<IGameProfileManager>();
+      var profile = profileManager.ResolveProfileForFiles( filePaths );
+      if ( profile is null )
+      {
+        HideSplash();
+        MessageBox.Show(
+          "Could not find a game profile that can open the file(s) passed on the command line.\n\n" +
+          $"Supported file types: {string.Join( ", ", profileManager.GetSupportedFileExtensions() )}",
+          "Unsupported File", MessageBoxButton.OK, MessageBoxImage.Warning );
+        return false;
+      }
+
+      var editorEnvironment = Container.Resolve<IEditorEnvironment>();
+      editorEnvironment.UseSourceFiles( profile, filePaths );
+
+      return true;
+    }
+
     private bool TryApplyDebugLaunchArgs()
     {
       if ( !Debugger.IsAttached )
@@ -183,10 +216,7 @@ namespace Index.App
         return false;
 
       var editorEnvironment = Container.Resolve<IEditorEnvironment>();
-      editorEnvironment.GameId = profile.GameId;
-      editorEnvironment.GameName = profile.GameName;
-      editorEnvironment.GamePath = gamePath;
-      editorEnvironment.GameProfile = profile;
+      editorEnvironment.UseGamePath( profile, gamePath );
 
       return true;
     }

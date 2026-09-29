@@ -24,7 +24,7 @@ namespace Index.App.ViewModels
     public MainShellViewModel( IContainerProvider container, IEditorEnvironment environment )
       : base( container )
     {
-      Title = $"Index | {environment.GameName}";
+      Title = BuildTitle( environment );
       EditorEnvironment = environment;
     }
 
@@ -58,6 +58,19 @@ namespace Index.App.ViewModels
     #endregion
 
     #region Private Methods
+
+    private static string BuildTitle( IEditorEnvironment environment )
+    {
+      var title = $"Index | {environment.GameName}";
+
+      var sourceFiles = environment.SourceFiles;
+      if ( sourceFiles is { Count: 1 } )
+        title += $" | {System.IO.Path.GetFileName( sourceFiles[ 0 ] )}";
+      else if ( sourceFiles is { Count: > 1 } )
+        title += $" | {sourceFiles.Count} files";
+
+      return title;
+    }
 
     private void InitializeBottomTabPanel()
     {

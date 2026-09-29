@@ -94,7 +94,11 @@ namespace Index.App.ViewModels
     {
       var fileSystem = _environment.FileSystem;
       var loader = _environment.GameProfile.FileSystemLoader;
-      loader.SetBasePath( _environment.GamePath );
+
+      if ( _environment.SourceFiles is { Count: > 0 } sourceFiles )
+        loader.SetSourceFiles( sourceFiles );
+      else
+        loader.SetBasePath( _environment.GamePath );
 
       void SetLoadProgress( double progress )
       {

@@ -10,6 +10,7 @@ namespace Index.Domain.Models
     public string GameId { get; set; }
     public string GameName { get; set; }
     public string GamePath { get; set; }
+    public IReadOnlyList<string>? SourceFiles { get; set; }
     public IGameProfile GameProfile { get; set; }
 
     public IAssetManager AssetManager { get; }

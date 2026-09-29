@@ -16,6 +16,7 @@ namespace Index.Domain.GameProfiles
 
     public abstract IFileSystemLoader FileSystemLoader { get; }
     public abstract IGamePathIdentificationRule IdentificationRule { get; }
+    public virtual IReadOnlyList<string> SupportedFileExtensions => Array.Empty<string>();
 
     #endregion
 
