@@ -57,6 +57,12 @@ namespace Index.Modules.MeshEditor.ViewModels
       ZoomExtents();
     }
 
+    protected override void OnConfigureExportJobParameters( IParameterCollection jobParameters )
+    {
+      // Only export the meshes that are currently shown in the viewer.
+      jobParameters.Set( MeshAssetExportJob.EXCLUDED_MESH_NAMES_PARAMETER, Scene.GetHiddenMeshNames() );
+    }
+
     protected override void OnDisposing()
     {
       Progress = new ProgressInfo();

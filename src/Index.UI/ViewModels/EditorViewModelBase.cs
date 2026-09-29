@@ -138,6 +138,13 @@ namespace Index.UI.ViewModels
     {
     }
 
+    /// <summary>
+    ///   Lets an editor pass its current view state (e.g. which meshes are shown) to the export job.
+    /// </summary>
+    protected virtual void OnConfigureExportJobParameters( IParameterCollection jobParameters )
+    {
+    }
+
     #endregion
 
     #region Private Methods
@@ -171,6 +178,7 @@ namespace Index.UI.ViewModels
         jobParams.Set<IAsset>( "Asset", Asset );
         jobParams.Set( "AssetReference", Asset.AssetReference );
         jobParams.Set( "Options", options );
+        OnConfigureExportJobParameters( jobParams );
 
         var jobManager = Container.Resolve<IJobManager>();
         var job = jobManager.CreateJob( jobType, jobParams );

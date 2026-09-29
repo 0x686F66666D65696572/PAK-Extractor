@@ -105,6 +105,9 @@ namespace Index.Domain.Assets.Meshes
     {
       foreach ( var oldMeshIndex in oldNode.MeshIndices )
       {
+        if ( _removeSet.Contains( OldScene.Meshes[ oldMeshIndex ].Name ) )
+          continue;
+
         if ( !MeshLookup.TryGetValue( oldMeshIndex, out var newMeshIndex ) )
         {
           var mesh = OldScene.Meshes[ oldMeshIndex ];

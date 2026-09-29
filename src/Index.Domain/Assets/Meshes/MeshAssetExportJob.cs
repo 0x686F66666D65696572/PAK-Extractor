@@ -11,6 +11,16 @@ namespace Index.Domain.Assets.Meshes
   public class MeshAssetExportJob : AssetExportJobBase<MeshAsset, MeshAssetExportOptions>
   {
 
+    #region Constants
+
+    /// <summary>
+    ///   Optional job parameter (<see cref="ISet{T}"/> of mesh names) listing meshes to leave out,
+    ///   e.g. the ones hidden in the mesh viewer.
+    /// </summary>
+    public const string EXCLUDED_MESH_NAMES_PARAMETER = "ExcludedMeshNames";
+
+    #endregion
+
     #region Properties
 
     protected IJobManager JobManager { get; }
@@ -37,8 +47,7 @@ namespace Index.Domain.Assets.Meshes
       if ( Options.ExportTextures )
         await ExportTextures();
 
-      if ( Options.RemoveLODs || Options.RemoveVolumes )
-        RemoveLodsAndVolumes();
+      RemoveExcludedMeshes();
 
       WriteFile();
     }
@@ -170,12 +179,15 @@ namespace Index.Domain.Assets.Meshes
         );
     }
 
-    private void RemoveLodsAndVolumes()
+    private void RemoveExcludedMeshes()
     {
       SetStatus( "Filtering Meshes" );
       SetIndeterminate();
 
       var removeMeshNames = new HashSet<string>();
+
+      if ( Parameters.TryGet<ISet<string>>( EXCLUDED_MESH_NAMES_PARAMETER, out var excludedMeshNames ) && excludedMeshNames is not null )
+        removeMeshNames.UnionWith( excludedMeshNames );
 
       if ( Options.RemoveLODs )
         foreach ( var lodMeshName in Asset.LodMeshNames )
