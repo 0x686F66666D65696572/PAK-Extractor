@@ -24,10 +24,23 @@
                 BorderBrush="{DynamicResource Brushes.Tertiary.Border.Static}"
                 Background="{DynamicResource Brushes.Tertiary.Background.Static}"
                 HorizontalAlignment="Stretch">
-            <TextBlock Text="Meshes"
-                       Foreground="{DynamicResource Brushes.Foreground.Static}"
-                       Padding="5,2"
-                       VerticalAlignment="Center" />
+            <DockPanel LastChildFill="True">
+                <StackPanel DockPanel.Dock="Right"
+                            Orientation="Horizontal">
+                    <controls:IxButton Content="All"
+                                       Icon="{x:Static ui:SegoeIcon.CheckboxComposite}"
+                                       ToolTip="Show all listed meshes (only the search results, if a search is active)"
+                                       Command="{Binding Scene.ShowAllMeshesCommand}" />
+                    <controls:IxButton Content="None"
+                                       Icon="{x:Static ui:SegoeIcon.Checkbox}"
+                                       ToolTip="Hide all listed meshes (only the search results, if a search is active)"
+                                       Command="{Binding Scene.HideAllMeshesCommand}" />
+                </StackPanel>
+                <TextBlock Text="Meshes"
+                           Foreground="{DynamicResource Brushes.Foreground.Static}"
+                           Padding="5,2"
+                           VerticalAlignment="Center" />
+            </DockPanel>
         </Border>
         <!--#endregion-->
 
