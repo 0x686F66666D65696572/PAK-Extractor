@@ -32,6 +32,8 @@ Scanning a whole game directory still works as before.
 ### Things to know
 
 - If you pick several files, they must all belong to the same game.
+- Space Marine 2 keeps an index for each pak in a `<name>.pak.cache` file next to it. If that file is there it is
+  used; if you copied only the `.pak`, the index is read from the pak itself instead, so the `.pak.cache` is optional.
 - A file you pick yourself is always loaded, even ones the profile would normally skip during a directory scan
   (e.g. the Halo CEA multiplayer stub paks).
 - Some assets reference data stored in *other* archives, such as a model whose textures are in a different pak.
