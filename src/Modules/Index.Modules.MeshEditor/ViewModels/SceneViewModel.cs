@@ -125,6 +125,28 @@ namespace Index.Modules.MeshEditor.ViewModels
       }
     }
 
+    /// <summary>
+    ///   Names of the meshes currently hidden in the viewer. A name shared by a visible mesh is left out,
+    ///   so a visible mesh is never dropped from an export because a hidden one has the same name.
+    /// </summary>
+    public ISet<string> GetHiddenMeshNames()
+    {
+      var hidden = new HashSet<string>();
+      var visible = new HashSet<string>();
+
+      lock ( _collectionLock )
+      {
+        if ( _nodes is null )
+          return hidden;
+
+        foreach ( var node in _nodes )
+          ( node.IsVisible ? visible : hidden ).Add( node.Name );
+      }
+
+      hidden.ExceptWith( visible );
+      return hidden;
+    }
+
     public void ForceUpdateBounds()
     {
       GroupModel.InvalidateRender();
