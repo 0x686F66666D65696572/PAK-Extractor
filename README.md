@@ -36,6 +36,8 @@ Scanning a whole game directory still works as before.
   used; if you copied only the `.pak`, the index is read from the pak itself instead, so the `.pak.cache` is optional.
 - Exporting a mesh from the mesh viewer only exports the meshes currently shown there; anything you've hidden
   (unticked) is left out. The *Remove LODs* / *Remove Volumes* export options still apply on top of that.
+  The **All** / **None** buttons above the mesh list tick or untick every listed mesh at once (only the search
+  results, if you've typed a search).
 - A file you pick yourself is always loaded, even ones the profile would normally skip during a directory scan
   (e.g. the Halo CEA multiplayer stub paks).
 - Some assets reference data stored in *other* archives, such as a model whose textures are in a different pak.

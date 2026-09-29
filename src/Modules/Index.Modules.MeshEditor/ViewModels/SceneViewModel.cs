@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.ComponentModel;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using System.Windows.Data;
+using System.Windows.Input;
 using HelixToolkit.SharpDX.Core;
 using HelixToolkit.SharpDX.Core.Assimp;
 using HelixToolkit.SharpDX.Core.Model;
@@ -16,6 +18,7 @@ using Index.Domain.Assets.Textures.Dxgi;
 using Index.Textures;
 using Index.UI.ViewModels;
 using Index.Utilities;
+using Prism.Commands;
 using Prism.Ioc;
 using PropertyChanged;
 using Serilog;
@@ -49,6 +52,9 @@ namespace Index.Modules.MeshEditor.ViewModels
     [OnChangedMethod( nameof( OnShowWireframeChanged ) )]
     public bool ShowWireframe { get; set; }
 
+    public ICommand ShowAllMeshesCommand { get; }
+    public ICommand HideAllMeshesCommand { get; }
+
     #endregion
 
     #region Constructor
@@ -61,6 +67,9 @@ namespace Index.Modules.MeshEditor.ViewModels
       GroupModel = new SceneNodeGroupModel3D();
 
       ApplyTransforms();
+
+      ShowAllMeshesCommand = new DelegateCommand( () => SetListedMeshesVisible( true ) );
+      HideAllMeshesCommand = new DelegateCommand( () => SetListedMeshesVisible( false ) );
 
       ShowTextures = true;
     }
@@ -256,6 +265,18 @@ namespace Index.Modules.MeshEditor.ViewModels
 
         Nodes = collectionView;
       } );
+    }
+
+    /// <summary>
+    ///   Shows or hides every mesh currently in the list, so an active search narrows it to the matches.
+    /// </summary>
+    private void SetListedMeshesVisible( bool isVisible )
+    {
+      if ( Nodes is null )
+        return;
+
+      foreach ( var node in Nodes.OfType<ModelNodeViewModel>().ToList() )
+        node.IsVisible = isVisible;
     }
 
     private void OnShowTexturesChanged()
