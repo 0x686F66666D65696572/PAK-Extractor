@@ -40,8 +40,25 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      # Pin the build to the .NET 8 SDK (the runner also ships newer SDKs). Written above both
+      # checkouts so it applies to PAK-Extractor and LibSaber without changing either repo.
+      - name: Pin .NET SDK
+        shell: pwsh
+        run: |
+          '{ "sdk": { "version": "8.0.100", "rollForward": "latestFeature" } }' | Set-Content global.json
+          Get-Content global.json
+
+      # The profiles' ILRepack step (ILRepack.MSBuild.Task) only works under Visual Studio's
+      # .NET Framework MSBuild; under `dotnet build` it fails in Mono.Cecil's GetCurrentRuntime().
       - name: Build
-        run: dotnet build PAK-Extractor/Index.sln -c Release -nologo
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $msbuild = & $vswhere -latest -requires Microsoft.Component.MSBuild -find 'MSBuild\**\Bin\MSBuild.exe' | Select-Object -First 1
+          if ( -not $msbuild ) { throw "Visual Studio MSBuild was not found on the runner." }
+          Write-Host "Using $msbuild"
+          & $msbuild PAK-Extractor/Index.sln -restore -m -nologo -v:minimal -p:Configuration=Release
+          if ( $LASTEXITCODE -ne 0 ) { exit $LASTEXITCODE }
 
       - name: Check game profiles were bundled
         shell: pwsh
