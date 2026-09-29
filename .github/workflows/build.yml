@@ -1,0 +1,99 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+  workflow_dispatch:
+
+# Read-only by default; only the release job below can write.
+permissions:
+  contents: read
+
+env:
+  # LibSaber is referenced as a sibling directory by the game profiles.
+  # Pinned to the commit this fork was built and tested against.
+  LIBSABER_REF: 1311ab287add95771fefd51001836dcfd958ba1c
+  APP_OUTPUT: PAK-Extractor/src/Index.App/bin/Release/net8.0-windows7.0
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Check out PAK-Extractor
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: PAK-Extractor
+          persist-credentials: false
+
+      - name: Check out LibSaber
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Wildenhaus/LibSaber
+          ref: ${{ env.LIBSABER_REF }}
+          path: LibSaber
+          persist-credentials: false
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 8.0.x
+
+      # Pin the build to the .NET 8 SDK (the runner also ships newer SDKs). Written above both
+      # checkouts so it applies to PAK-Extractor and LibSaber without changing either repo.
+      - name: Pin .NET SDK
+        shell: pwsh
+        run: |
+          '{ "sdk": { "version": "8.0.100", "rollForward": "latestFeature" } }' | Set-Content global.json
+          Get-Content global.json
+
+      # The profiles' ILRepack step (ILRepack.MSBuild.Task) only works under Visual Studio's
+      # .NET Framework MSBuild; under `dotnet build` it fails in Mono.Cecil's GetCurrentRuntime().
+      - name: Build
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $msbuild = & $vswhere -latest -requires Microsoft.Component.MSBuild -find 'MSBuild\**\Bin\MSBuild.exe' | Select-Object -First 1
+          if ( -not $msbuild ) { throw "Visual Studio MSBuild was not found on the runner." }
+          Write-Host "Using $msbuild"
+          & $msbuild PAK-Extractor/Index.sln -restore -m -nologo -v:minimal -p:Configuration=Release
+          if ( $LASTEXITCODE -ne 0 ) { exit $LASTEXITCODE }
+
+      - name: Check game profiles were bundled
+        shell: pwsh
+        run: |
+          $profiles = Get-ChildItem "$env:APP_OUTPUT/GameProfiles" -Filter "Index.Profiles.*.dll"
+          $profiles | ForEach-Object { Write-Host "Found profile: $($_.Name)" }
+          if ( $profiles.Count -lt 3 ) { throw "Expected 3 game profiles, found $($profiles.Count)." }
+          if ( -not ( Test-Path "$env:APP_OUTPUT/Index.App.exe" ) ) { throw "Index.App.exe was not built." }
+
+      - name: Upload build
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: PAK-Extractor-win-x64
+          path: ${{ env.APP_OUTPUT }}
+          if-no-files-found: error
+
+  release:
+    # Pushing a tag like v0.4.0.2-pak1 publishes the build as a GitHub Release.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download build
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: PAK-Extractor-win-x64
+          path: PAK-Extractor
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          zip -qr "PAK-Extractor-$TAG-win-x64.zip" PAK-Extractor
+          gh release create "$TAG" "PAK-Extractor-$TAG-win-x64.zip" \
+            --repo "$GITHUB_REPOSITORY" --title "$TAG" --generate-notes
