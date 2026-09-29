@@ -11,7 +11,7 @@ public class SM2PckDevice : FileSystemDeviceBase
 
   private readonly string _basePath;
   private readonly string _filePath;
-  private readonly fioZIP_FILE _zipFile;
+  private readonly SM2PakArchive _zipFile;
   private readonly byte _nodePriority;
 
   #endregion
@@ -22,7 +22,7 @@ public class SM2PckDevice : FileSystemDeviceBase
   {
     _basePath = basePath;
     _filePath = filePath;
-    _zipFile = fioZIP_FILE.Open( _filePath );
+    _zipFile = SM2PakArchive.Open( _filePath );
 
     _nodePriority = GetPriority();
   }
@@ -63,7 +63,7 @@ public class SM2PckDevice : FileSystemDeviceBase
     var fileName = _filePath.Replace( _basePath, "" );
     var rootNode = new SM2FileSystemNode( this, fileName );
 
-    foreach ( var entry in _zipFile.Entries.Values )
+    foreach ( var entry in _zipFile.Entries )
     {
       CreateNode( entry, rootNode );
     }
